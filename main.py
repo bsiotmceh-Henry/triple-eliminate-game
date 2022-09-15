@@ -14,31 +14,42 @@ YMARGIN = (HEIGHT - GRIDSIZE * NUMGRID) // 2
 ROOTDIR = os.getcwd()
 FPS = 30
 
+gem_imgs = {
+    'blue': (0, 0, 255),
+    'red': (255, 0, 0),
+    'green': (0, 255, 0),
+    'purple': (255, 255, 0),
+    'yellow': (255, 255, 0),
+    'orange': (255, 255, 0),
+}
+gem_imgs_list = list(gem_imgs.keys())
+
 class Puzzle(pygame.sprite.Sprite):
-    def __init__(self, img_path, position, downlen):
+    def __init__(self, color, position, downlen):
         pygame.sprite.Sprite.__init__(self)
-        img = pygame.image.load(img_path)
-        self.image = pygame.transform.scale(img, (GRIDSIZE, GRIDSIZE))
-        self.rect = img.get_rect()
-        self.rect.x = position[0]
-        self.rect.y = position[1]
+
+        self.color = color
+
+        # img = pygame.image.load(img_path)
+        # self.image = pygame.transform.scale(img, (GRIDSIZE, GRIDSIZE))
+        # self.rect = img.get_rect()
+        self.image = pygame.Surface((GRIDSIZE - 4, GRIDSIZE - 4))
+        self.image.fill(gem_imgs[color])
+        self.rect = self.image.get_rect(center = position)
+        self.rect.x = position[0] + 2
+        self.rect.y = position[1] + 2
         self.downlen = downlen
 
-        # self.image = pygame.Surface(size)
-        # self.image.fill((255, 255, 0))
-        # self.rect = self.image.get_rect(center = position)
-
-
 class Application(Thread):
-    gem_imgs = {
-        'blue': '.\\image\\1.png',
-        'red': '.\\image\\2.png',
-        'green': '.\\image\\3.png',
-        'purple': '.\\image\\4.png',
-        'yellow': '.\\image\\5.png',
-        'orange': '.\\image\\6.png',
-    }
-    gem_imgs_list = list(gem_imgs.values())
+    # gem_imgs = {
+    #     'blue': '.\\image\\1.png',
+    #     'red': '.\\image\\2.png',
+    #     'green': '.\\image\\3.png',
+    #     'purple': '.\\image\\4.png',
+    #     'yellow': '.\\image\\5.png',
+    #     'orange': '.\\image\\6.png',
+    # }
+
     def __init__(self):
         Thread.__init__(self)
         
@@ -60,17 +71,21 @@ class Application(Thread):
         for x in range(NUMGRID):
             self.all_gems.append([])
             for y in range(NUMGRID):
-                # gem = Puzzle(img_path=random.choice(self.gem_imgs), size=(GRIDSIZE, GRIDSIZE), position=[XMARGIN+x*GRIDSIZE, YMARGIN+y*GRIDSIZE-NUMGRID*GRIDSIZE], downlen=NUMGRID*GRIDSIZE)
-                gem = Puzzle(img_path=random.choice(self.gem_imgs_list), position=[XMARGIN+x*GRIDSIZE, YMARGIN+y*GRIDSIZE], downlen=NUMGRID*GRIDSIZE)
+                # gem = Puzzle(img_path=random.choice(gem_imgs), size=(GRIDSIZE, GRIDSIZE), position=[XMARGIN+x*GRIDSIZE, YMARGIN+y*GRIDSIZE-NUMGRID*GRIDSIZE], downlen=NUMGRID*GRIDSIZE)
+                gem = Puzzle(color=random.choice(gem_imgs_list), position=[XMARGIN+x*GRIDSIZE, YMARGIN+y*GRIDSIZE], downlen=NUMGRID*GRIDSIZE)
                 self.all_gems[x].append(gem)
                 self.gems_group.add(gem)
             # if self.isMatch()[0] == 0:
             #     break
+    
+    def getGemByPos(self, x, y):
+        return self.all_gems[x][y]
 
     def checkSelected(self, position):
         for x in range(NUMGRID):
             for y in range(NUMGRID):
                 if self.getGemByPos(x, y).rect.collidepoint(*position):
+                    a = self.getGemByPos(x, y)
                     return [x, y]
         return None
 
@@ -135,7 +150,7 @@ class Application(Thread):
                         gem.direction = 'down'
                         self.all_gems[each][start+1] = gem
                     else:
-                        gem = Puzzle(img_path=random.choice(self.gem_imgs), size=(GRIDSIZE, GRIDSIZE), position=[XMARGIN+each*GRIDSIZE, YMARGIN-GRIDSIZE], downlen=GRIDSIZE)
+                        gem = Puzzle(img_path=random.choice(gem_imgs), size=(GRIDSIZE, GRIDSIZE), position=[XMARGIN+each*GRIDSIZE, YMARGIN-GRIDSIZE], downlen=GRIDSIZE)
                         self.gems_group.add(gem)
                         self.all_gems[each][start+1] = gem
                 start -= 1
@@ -154,7 +169,7 @@ class Application(Thread):
                     gem.direction = 'down'
                     self.all_gems[res_match[1]][start+3] = gem
                 else:
-                    gem = Puzzle(img_path=random.choice(self.gem_imgs), size=(GRIDSIZE, GRIDSIZE), position=[XMARGIN+res_match[1]*GRIDSIZE, YMARGIN+start*GRIDSIZE], downlen=GRIDSIZE*3)
+                    gem = Puzzle(img_path=random.choice(gem_imgs), size=(GRIDSIZE, GRIDSIZE), position=[XMARGIN+res_match[1]*GRIDSIZE, YMARGIN+start*GRIDSIZE], downlen=GRIDSIZE*3)
                     self.gems_group.add(gem)
                     self.all_gems[res_match[1]][start+3] = gem
                 start -= 1
@@ -170,27 +185,31 @@ class Application(Thread):
 
         while True:
             for event in pygame.event.get():
+                # 不知為何絕對要有這行才跑得動
                 if event.type == pygame.QUIT: sys.exit()
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if pygame.mouse.get_pressed()[0] == True:
                         press_pos = pygame.mouse.get_pos()
                         left_mouse_pressed = True
                         print(press_pos)
+                        print(self.checkSelected(press_pos))
                 elif event.type == pygame.MOUSEBUTTONUP:
                     print(pygame.mouse.get_pressed())
                     if left_mouse_pressed == True:
                         left_mouse_pressed == False
                         release_pos = pygame.mouse.get_pos()
                         print(release_pos)
+                        print(self.checkSelected(release_pos))
 
+            # 填上滿滿的黃色
             self.screen.fill((255, 255, 220))
             
             self.drawGrids()
             self.gems_group.draw(self.screen)
 
+            # 重複刷新畫面
             pygame.display.flip()
 
-            print()
 
 if __name__ == '__main__':
     mainApp = Application()
