@@ -15,12 +15,12 @@ ROOTDIR = os.getcwd()
 FPS = 30
 
 gem_imgs = {
-    'blue': (0, 0, 255),
+    'blue': (0, 0, 200),
     'red': (255, 0, 0),
     'green': (0, 255, 0),
-    'purple': (255, 255, 0),
-    'yellow': (255, 255, 0),
-    'orange': (255, 255, 0),
+    'purple': (100, 0, 255),
+    'yellow': (100, 255, 0),
+    'orange': (255, 100, 0),
 }
 gem_imgs_list = list(gem_imgs.keys())
 
@@ -41,15 +41,6 @@ class Puzzle(pygame.sprite.Sprite):
         self.downlen = downlen
 
 class Application(Thread):
-    # gem_imgs = {
-    #     'blue': '.\\image\\1.png',
-    #     'red': '.\\image\\2.png',
-    #     'green': '.\\image\\3.png',
-    #     'purple': '.\\image\\4.png',
-    #     'yellow': '.\\image\\5.png',
-    #     'orange': '.\\image\\6.png',
-    # }
-
     def __init__(self):
         Thread.__init__(self)
         
@@ -65,8 +56,9 @@ class Application(Thread):
                 self.drawBlock(rect, color=(255, 165, 0), size=1)
 
     def put_puzzle(self):
-        # while True:
+        # 所有的拼圖物件都會放在self.all_gems裡面，通常要引用拼圖方法都會呼叫這邊
         self.all_gems = []
+        # 這邊我沒有很清楚sprite.Group的方法，看起來是所有遊戲物件的集合
         self.gems_group = pygame.sprite.Group()
         for x in range(NUMGRID):
             self.all_gems.append([])
@@ -188,18 +180,19 @@ class Application(Thread):
                 # 不知為何絕對要有這行才跑得動
                 if event.type == pygame.QUIT: sys.exit()
                 elif event.type == pygame.MOUSEBUTTONDOWN:
+                    # 判斷左鍵按壓
                     if pygame.mouse.get_pressed()[0] == True:
                         press_pos = pygame.mouse.get_pos()
                         left_mouse_pressed = True
                         print(press_pos)
-                        print(self.checkSelected(press_pos))
+                        # print(self.checkSelected(press_pos))
                 elif event.type == pygame.MOUSEBUTTONUP:
-                    print(pygame.mouse.get_pressed())
+                    # 判斷左鍵釋放
                     if left_mouse_pressed == True:
                         left_mouse_pressed == False
                         release_pos = pygame.mouse.get_pos()
                         print(release_pos)
-                        print(self.checkSelected(release_pos))
+                        # print(self.checkSelected(release_pos))
 
             # 填上滿滿的黃色
             self.screen.fill((255, 255, 220))
