@@ -25,16 +25,16 @@ gem_imgs = {
 gem_imgs_list = list(gem_imgs.keys())
 
 class Puzzle(pygame.sprite.Sprite):
-    def __init__(self, color, position, downlen):
+    def __init__(self, type, position, downlen):
         pygame.sprite.Sprite.__init__(self)
 
-        self.color = color
+        self.type = type
 
         # img = pygame.image.load(img_path)
         # self.image = pygame.transform.scale(img, (GRIDSIZE, GRIDSIZE))
         # self.rect = img.get_rect()
         self.image = pygame.Surface((GRIDSIZE - 4, GRIDSIZE - 4))
-        self.image.fill(gem_imgs[color])
+        self.image.fill(gem_imgs[type])
         self.rect = self.image.get_rect(center = position)
         self.rect.x = position[0] + 2
         self.rect.y = position[1] + 2
@@ -64,7 +64,7 @@ class Application(Thread):
             self.all_gems.append([])
             for y in range(NUMGRID):
                 # gem = Puzzle(img_path=random.choice(gem_imgs), size=(GRIDSIZE, GRIDSIZE), position=[XMARGIN+x*GRIDSIZE, YMARGIN+y*GRIDSIZE-NUMGRID*GRIDSIZE], downlen=NUMGRID*GRIDSIZE)
-                gem = Puzzle(color=random.choice(gem_imgs_list), position=[XMARGIN+x*GRIDSIZE, YMARGIN+y*GRIDSIZE], downlen=NUMGRID*GRIDSIZE)
+                gem = Puzzle(type=random.choice(gem_imgs_list), position=[XMARGIN+x*GRIDSIZE, YMARGIN+y*GRIDSIZE], downlen=NUMGRID*GRIDSIZE)
                 self.all_gems[x].append(gem)
                 self.gems_group.add(gem)
             # if self.isMatch()[0] == 0:
@@ -82,31 +82,31 @@ class Application(Thread):
         return None
 
     def swapGem(self, gem1_pos, gem2_pos):
-        margin = gem1_pos[0] - gem2_pos[0] + gem1_pos[1] - gem2_pos[1]
-        if abs(margin) != 1:
-            return False
         gem1 = self.getGemByPos(*gem1_pos)
         gem2 = self.getGemByPos(*gem2_pos)
-        if gem1_pos[0] - gem2_pos[0] == 1:
-            gem1.direction = 'left'
-            gem2.direction = 'right'
-        elif gem1_pos[0] - gem2_pos[0] == -1:
-            gem2.direction = 'left'
-            gem1.direction = 'right'
-        elif gem1_pos[1] - gem2_pos[1] == 1:
-            gem1.direction = 'up'
-            gem2.direction = 'down'
-        elif gem1_pos[1] - gem2_pos[1] == -1:
-            gem2.direction = 'up'
-            gem1.direction = 'down'
+        # if gem1_pos[0] - gem2_pos[0] == 1:
+        #     gem1.direction = 'left'
+        #     gem2.direction = 'right'
+        # elif gem1_pos[0] - gem2_pos[0] == -1:
+        #     gem2.direction = 'left'
+        #     gem1.direction = 'right'
+        # elif gem1_pos[1] - gem2_pos[1] == 1:
+        #     gem1.direction = 'up'
+        #     gem2.direction = 'down'
+        # elif gem1_pos[1] - gem2_pos[1] == -1:
+        #     gem2.direction = 'up'
+        #     gem1.direction = 'down'
         gem1.target_x = gem2.rect.left
         gem1.target_y = gem2.rect.top
-        gem1.fixed = False
         gem2.target_x = gem1.rect.left
         gem2.target_y = gem1.rect.top
-        gem2.fixed = False
+        gem1.rect.x = gem1.target_x
+        gem1.rect.y = gem1.target_y
+        gem2.rect.x = gem2.target_x
+        gem2.rect.y = gem2.target_y
         self.all_gems[gem2_pos[0]][gem2_pos[1]] = gem1
         self.all_gems[gem1_pos[0]][gem1_pos[1]] = gem2
+        
         return True
 
     def isMatch(self):
@@ -174,6 +174,8 @@ class Application(Thread):
         self.put_puzzle()
 
         left_mouse_pressed = False
+        gem1_pos = None
+        gem2_pos = None
 
         while True:
             for event in pygame.event.get():
@@ -185,14 +187,20 @@ class Application(Thread):
                         press_pos = pygame.mouse.get_pos()
                         left_mouse_pressed = True
                         print(press_pos)
-                        # print(self.checkSelected(press_pos))
+                        gem1_pos = self.checkSelected(press_pos)
+                        
                 elif event.type == pygame.MOUSEBUTTONUP:
                     # 判斷左鍵釋放
                     if left_mouse_pressed == True:
                         left_mouse_pressed == False
                         release_pos = pygame.mouse.get_pos()
                         print(release_pos)
-                        # print(self.checkSelected(release_pos))
+                        gem2_pos = self.checkSelected(release_pos)
+                        if gem1_pos != None and gem2_pos != None:
+                            margin = gem1_pos[0] - gem2_pos[0] + gem1_pos[1] - gem2_pos[1]
+                            if abs(margin) == 1:
+                                self.swapGem(gem1_pos, gem2_pos)
+                            
 
             # 填上滿滿的黃色
             self.screen.fill((255, 255, 220))
