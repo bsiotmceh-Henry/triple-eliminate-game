@@ -25,7 +25,7 @@ gem_imgs = {
 gem_imgs_list = list(gem_imgs.keys())
 
 class Puzzle(pygame.sprite.Sprite):
-    def __init__(self, color, position):
+    def __init__(self, type, position):
         pygame.sprite.Sprite.__init__(self)
 
         self.type = type
@@ -67,7 +67,7 @@ class Application(Thread):
             self.all_gems.append([])
             for y in range(NUMGRID):
                 # gem = Puzzle(img_path=random.choice(gem_imgs), size=(GRIDSIZE, GRIDSIZE), position=[XMARGIN+x*GRIDSIZE, YMARGIN+y*GRIDSIZE-NUMGRID*GRIDSIZE], downlen=NUMGRID*GRIDSIZE)
-                gem = Puzzle(color=random.choice(gem_imgs_list), position=[XMARGIN+x*GRIDSIZE, YMARGIN+y*GRIDSIZE])
+                gem = Puzzle(type=random.choice(gem_imgs_list), position=[XMARGIN+x*GRIDSIZE, YMARGIN+y*GRIDSIZE])
                 self.all_gems[x].append(gem)
                 self.gems_group.add(gem)
             # if self.isMatch()[0] == 0:
