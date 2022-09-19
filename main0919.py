@@ -1,6 +1,7 @@
 import os
 import sys
 from time import sleep
+from tkinter import Y
 import pygame
 import random
 from threading import Thread
@@ -44,9 +45,7 @@ class Puzzle(pygame.sprite.Sprite):
 
 class Application(Thread):
     matches = []
-    # check_is_matched = []
-    check_is_matched_x = []
-    check_is_matched_y = []
+    check_is_matched = []
     match_x = []
     match_y = []
     def __init__(self):
@@ -115,35 +114,68 @@ class Application(Thread):
     #                     return [2, x, y]
     #     return [0, x, y]
 
-    def nextMatchX(self, x, y, x_count):
-        if x + 1 < NUMGRID and self.getGemByPos(x, y).type == self.getGemByPos(x+1, y).type:
-            # 尋找下一個
-            self.nextMatchX(x+1, y, x_count+1)
+    def searchMatch(self, x, y):
+        x_back_count = self.backMatchX(x, y)
+        y_back_count = self.backMatchY(x, y)
+        x_next_count = self.nextMatchX(x, y)
+        y_next_count = self.nextMatchY(x, y)
         
-        # match end
-        else:
-            if x_count >= 2:
-                m = []
-                for mx in range(x - x_count, x + 1, 1):
-                    m.append([mx, y])
-                    self.check_is_matched_x.append([mx, y])
-                self.match_x.append(m)
-        return 
+        x_count = x_back_count + x_next_count
+        match_group = []
+        if x_count >= 2:
+            for mx in range(x - x_back_count, x + x_next_count + 1, 1):
+                print(self.searchMatch(mx, y))
+                if [mx, y] not in match_group:
+                    match_group.append([mx, y])
+                    self.check_is_matched.append([mx, y])
+        
+        y_count = y_back_count + y_next_count
+        if y_count >= 2:
+            for my in range(y - y_back_count, y + y_next_count + 1, 1):
+                print(self.searchMatch(x, my))
+                if [x, my] not in match_group:
+                    match_group.append([x, my])
+                    self.check_is_matched.append([x, my])
+        
+        return match_group
 
-    def nextMatchY(self, x, y, y_count):
-        if y + 1 < NUMGRID and self.getGemByPos(x, y).type == self.getGemByPos(x, y+1).type:
+    # 往前尋找配對的方塊
+    def nextMatchX(self, x, y):
+        if x + 1 >= NUMGRID:
+            return 0
+        elif self.getGemByPos(x, y).type == self.getGemByPos(x+1, y).type:
             # 尋找下一個
-            self.nextMatchY(x, y+1, y_count+1)
-            
-        # match end
+            return 1 + self.nextMatchX(x+1, y)
         else:
-            if y_count >= 2:
-                m = []
-                for my in range(y - y_count, y + 1, 1):
-                    m.append([x, my])
-                    self.check_is_matched_y.append([x, my])
-                self.match_y.append(m)
-        return
+            return 0
+
+    def nextMatchY(self, x, y):
+        if y + 1 >= NUMGRID:
+            return 0
+        elif self.getGemByPos(x, y).type == self.getGemByPos(x, y+1).type:
+            # 尋找下一個
+            return 1 + self.nextMatchY(x, y+1)
+        else:
+            return 0
+
+    # 往回尋找配對的方塊
+    def backMatchX(self, x, y):
+        if x - 1 < 0:
+            return 0
+        elif self.getGemByPos(x, y).type == self.getGemByPos(x-1, y).type:
+            # 尋找下一個
+            return 1 + self.backMatchX(x-1, y)
+        else:
+            return 0
+
+    def backMatchY(self, x, y):
+        if y - 1 < 0:
+            return 0
+        elif self.getGemByPos(x, y).type == self.getGemByPos(x, y-1).type:
+            # 尋找下一個
+            return 1 + self.backMatchY(x, y-1)
+        else:
+            return 0
 
     '''
     ex.[[[0,0],[0,1],[0,2]], [[1,3],[1,4],[1,5]]]
@@ -245,18 +277,18 @@ class Application(Thread):
                     elif pygame.mouse.get_pressed()[2] == True:
                         for x in range(NUMGRID):
                             for y in range(NUMGRID):
-                                if [x, y] not in self.check_is_matched_x:
-                                    self.nextMatchX(x, y, 0)
-                                if [x, y] not in self.check_is_matched_y:
-                                    self.nextMatchY(x, y, 0)
+                                if [x, y] not in self.check_is_matched:
+                                    match = self.searchMatch(x, y)
+                                    if match != []:
+                                        self.matches.append(match)
 
-                        if self.match_x != []:
-                            for match_x in self.match_x:
-                                self.matches.append(match_x)
+                        # if self.match_x != []:
+                        #     for match_x in self.match_x:
+                        #         self.matches.append(match_x)
                             
-                        if self.match_y != []:
-                            for match_y in self.match_y:
-                                self.matches.append(match_y)
+                        # if self.match_y != []:
+                        #     for match_y in self.match_y:
+                        #         self.matches.append(match_y)
 
                         print(self.matches)
                         # self.matches = [[[3, 3], [4, 3]], [[4, 7], [5, 7]]]
@@ -278,10 +310,6 @@ class Application(Thread):
             if self.matches != [] and pygame.time.get_ticks() - match_ticks >= 500:
                 self.removeMatched(self.matches)
                 self.matches = []
-                self.check_is_matched_x = []
-                self.check_is_matched_y = []
-                self.match_x = []
-                self.match_y = []
                 match_ticks = pygame.time.get_ticks()
 
             # 填上滿滿的黃色
