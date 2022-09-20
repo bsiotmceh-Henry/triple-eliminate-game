@@ -49,6 +49,7 @@ class Application(Thread):
     check_is_matched_y = []
     match_x = []
     match_y = []
+    match_ticks = 0
     def __init__(self):
         Thread.__init__(self)
         
@@ -75,8 +76,9 @@ class Application(Thread):
                 gem = Puzzle(type=random.choice(gem_imgs_list), position=[XMARGIN+x*GRIDSIZE, YMARGIN+y*GRIDSIZE])
                 self.all_gems[x].append(gem)
                 self.gems_group.add(gem)
-            # if self.isMatch()[0] == 0:
-            #     break
+        
+        # 尋找符合
+        self.searchMatch()
     
     def getGemByPos(self, x, y):
         return self.all_gems[x][y]
@@ -86,7 +88,7 @@ class Application(Thread):
             for y in range(NUMGRID):
                 if self.getGemByPos(x, y).rect.collidepoint(*position):
                     # 檢查點擊位置是否在方塊內
-                    a = self.getGemByPos(x, y)
+                    # a = self.getGemByPos(x, y)
                     return [x, y]
         return None
 
@@ -114,6 +116,26 @@ class Application(Thread):
     #                 if self.getGemByPos(x, y).type == self.getGemByPos(x, y+1).type == self.getGemByPos(x, y+2).type:
     #                     return [2, x, y]
     #     return [0, x, y]
+
+    def searchMatch(self):
+        for x in range(NUMGRID):
+            for y in range(NUMGRID):
+                if [x, y] not in self.check_is_matched_x:
+                    self.nextMatchX(x, y, 0)
+                if [x, y] not in self.check_is_matched_y:
+                    self.nextMatchY(x, y, 0)
+
+        if self.match_x != []:
+            for match_x in self.match_x:
+                self.matches.append(match_x)
+            
+        if self.match_y != []:
+            for match_y in self.match_y:
+                self.matches.append(match_y)
+
+        # print(self.matches)
+        # 消除間隔
+        self.match_ticks = pygame.time.get_ticks()
 
     def nextMatchX(self, x, y, x_count):
         if x + 1 < NUMGRID and self.getGemByPos(x, y).type == self.getGemByPos(x+1, y).type:
@@ -160,7 +182,7 @@ class Application(Thread):
         # 方塊掉落
         for x in range(NUMGRID):
             # 這邊要由下往上判斷
-            for y in range(NUMGRID - 1, 0, -1):
+            for y in range(NUMGRID - 1, -1, -1):
                 if self.all_gems[x][y] == None:
                     self.dropPuzzle(x, y, 1)
                 pass
@@ -176,7 +198,9 @@ class Application(Thread):
                 self.dropPuzzle(x, y, drop_count + 1)
         else:
             # 產生新方塊
-            # self.gems_group.add(gem)
+            gem = Puzzle(type=random.choice(gem_imgs_list), position=[XMARGIN+x*GRIDSIZE, YMARGIN+y*GRIDSIZE])
+            self.all_gems[x][y] = gem
+            self.gems_group.add(gem)
             pass
         return
 
@@ -227,7 +251,7 @@ class Application(Thread):
         self.put_puzzle()
 
         left_mouse_pressed = False
-        match_ticks = 0
+        # match_ticks = 0
 
         while True:
             for event in pygame.event.get():
@@ -238,51 +262,34 @@ class Application(Thread):
                     if pygame.mouse.get_pressed()[0] == True:
                         press_pos = pygame.mouse.get_pos()
                         left_mouse_pressed = True
-                        print(press_pos)
+                        # print(press_pos)
                         gem1_pos = self.checkSelected(press_pos)
     
-                    # 測試用
-                    elif pygame.mouse.get_pressed()[2] == True:
-                        for x in range(NUMGRID):
-                            for y in range(NUMGRID):
-                                if [x, y] not in self.check_is_matched_x:
-                                    self.nextMatchX(x, y, 0)
-                                if [x, y] not in self.check_is_matched_y:
-                                    self.nextMatchY(x, y, 0)
-
-                        if self.match_x != []:
-                            for match_x in self.match_x:
-                                self.matches.append(match_x)
-                            
-                        if self.match_y != []:
-                            for match_y in self.match_y:
-                                self.matches.append(match_y)
-
-                        print(self.matches)
-                        # self.matches = [[[3, 3], [4, 3]], [[4, 7], [5, 7]]]
-
                 elif event.type == pygame.MOUSEBUTTONUP:
                     # 判斷左鍵釋放
                     if left_mouse_pressed == True:
                         left_mouse_pressed == False
                         release_pos = pygame.mouse.get_pos()
-                        print(release_pos)
+                        # print(release_pos)
                         gem2_pos = self.checkSelected(release_pos)
                         if gem1_pos != None and gem2_pos != None:
                             # 判斷在鄰近方塊
                             margin = gem1_pos[0] - gem2_pos[0] + gem1_pos[1] - gem2_pos[1]
                             if abs(margin) == 1:
                                 self.swapGem(gem1_pos, gem2_pos)
+                                # 尋找符合
+                                self.searchMatch()
 
-            # 如果有方塊符合，則消除
-            if self.matches != [] and pygame.time.get_ticks() - match_ticks >= 500:
+            # 如果有方塊符合，則消除，並且再次尋找符合
+            if self.matches != [] and pygame.time.get_ticks() - self.match_ticks >= 500:
                 self.removeMatched(self.matches)
                 self.matches = []
                 self.check_is_matched_x = []
                 self.check_is_matched_y = []
                 self.match_x = []
                 self.match_y = []
-                match_ticks = pygame.time.get_ticks()
+                self.match_ticks = pygame.time.get_ticks()
+                self.searchMatch()
 
             # 填上滿滿的黃色
             self.screen.fill((255, 255, 220))
