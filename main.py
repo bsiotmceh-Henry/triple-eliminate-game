@@ -201,7 +201,6 @@ class Application(Thread):
             gem = Puzzle(type=random.choice(gem_imgs_list), position=[XMARGIN+x*GRIDSIZE, YMARGIN+y*GRIDSIZE])
             self.all_gems[x][y] = gem
             self.gems_group.add(gem)
-            pass
         return
 
     def generateNewGems(self, res_match):
